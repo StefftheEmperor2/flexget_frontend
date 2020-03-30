@@ -39,6 +39,75 @@ class Series_Category {
 		return $this->file;
 	}
 
+	protected function check_dir($dir)
+    {
+        $segments = explode(DIRECTORY_SEPARATOR, $dir);
+        $current_dir_segments = [];
+        foreach ($segments as $segment)
+        {
+            $current_dir_segments[] = $segment;
+            $current_dir = implode(DIRECTORY_SEPARATOR, $current_dir_segments);
+            if ( ! is_dir($current_dir))
+            {
+                if ( ! mkdir($current_dir) && ! is_dir($current_dir))
+                {
+                    throw new \RuntimeException(sprintf('Directory "%s" was not created', $current_dir));
+                }
+            }
+        }
+    }
+
+    protected function touch($filename)
+    {
+        $segments = explode(DIRECTORY_SEPARATOR, $filename);
+        $dirname = implode(DIRECTORY_SEPARATOR, array_slice($segments, 0, -1));
+        $this->check_dir($dirname);
+        touch($filename);
+    }
+
+    protected function get_from_csv($file)
+    {
+        if ( ! file_exists($file))
+        {
+            $this->touch($file);
+        }
+
+        $fh = fopen($file, 'r');
+        $added_array = array();
+        if ($fh !== FALSE)
+        {
+            while (($added_line = fgetcsv($fh)) !== FALSE)
+            {
+                $added_array[] = $added_line;
+            }
+
+            fclose($fh);
+        }
+
+        if ($added_array === FALSE)
+        {
+            $added_array = array();
+        }
+        $added_items = array();
+
+        foreach ($added_array as $added_item)
+        {
+            if (is_array($added_item))
+            {
+                $added_item = reset($added_item);
+            }
+            if (empty($added_item))
+            {
+                continue;
+            }
+            $added_object = new Series();
+            $added_object->set_name($added_item);
+            $added_object->set_category($this);
+            $added_items[] = $added_object;
+        }
+
+        return $added_items;
+    }
 	/**
 	 * @param mixed $file
 	 */
@@ -46,7 +115,7 @@ class Series_Category {
 	{
 		if ( ! file_exists($file))
 		{
-			touch($file);
+			$this->touch($file);
 		}
 
 		if ( ! function_exists('yaml_parse_file'))
@@ -60,89 +129,25 @@ class Series_Category {
 			$series = array('series' => array('default' => array()));
 		}
 
-
 		$series = $series['series']['default'];
 		$this->series_store = new Series_Store();
 		foreach ($series as $serie)
 		{
-			$serie_object = new Series();
-			$serie_object->set_name($serie);
-			$serie_object->set_category($this);
+			$series_object = new Series();
+            $series_object->set_name($serie);
+            $series_object->set_category($this);
 
-			$this->series_store->add($serie_object, FALSE);
+			$this->series_store->add($series_object, FALSE);
 		}
 
 		$added_file = substr($file,0,strlen($file)-4).'_added.csv';
 		$removed_file = substr($file,0,strlen($file)-4).'_removed.csv';
-		if ( ! file_exists($added_file))
-		{
-			touch($added_file);
-		}
-		if ( ! file_exists($removed_file))
-		{
-			touch($removed_file);
-		}
-		$fh = fopen($added_file, 'r');
-		$added_array = array();
-		while (($added_line = fgetcsv($fh)) !== FALSE)
-		{
-			$added_array[] = $added_line;
-		}
 
-		if ($added_array === FALSE)
-		{
-			$added_array = array();
-		}
-		$added_items = array();
-
-		foreach ($added_array as $added_item)
-		{
-			if (is_array($added_item))
-			{
-				$added_item = reset($added_item);
-			}
-			if (empty($added_item))
-			{
-				continue;
-			}
-			$added_object = new Series();
-			$added_object->set_name($added_item);
-			$added_object->set_category($this);
-			$added_items[] = $added_object;
-		}
+		$added_items = $this->get_from_csv($added_file);
 		$this->get_series_store()->set_added($added_items);
-		fclose($fh);
-		$fh = fopen($removed_file, 'r');
-		$removed_array = array();
-		while (($removed_line = fgetcsv($fh)) !== FALSE)
-		{
-			$removed_array[] = $removed_line;
-		}
 
-		if ($removed_array === FALSE)
-		{
-			$removed_array = array();
-		}
-		$removed_items = array();
-
-		foreach ($removed_array as $removed_item)
-		{
-			if (is_array($removed_item))
-			{
-				$removed_item = reset($removed_item);
-			}
-			if (empty($removed_item))
-			{
-				continue;
-			}
-			$removed_object = new Series();
-			$removed_object->set_name($removed_item);
-			$removed_object->set_category($this);
-			$removed_items[] = $removed_object;
-		}
-
+        $removed_items = $this->get_from_csv($removed_file);
 		$this->get_series_store()->set_removed($removed_items);
-		fclose($fh);
 		$this->file = $file;
 	}
 
@@ -169,7 +174,6 @@ class Series_Category {
 			$removed[] = array($removed_item->get_name(), 'http://flexget.com');
 		}
 
-
 		$fh = fopen(substr($this->get_file(),0,-4).'_added.csv','w');
 		foreach ($added as $added_line) {
 			fputcsv($fh, $added_line);
@@ -183,8 +187,6 @@ class Series_Category {
 		fclose($fh);
 
 		yaml_emit_file($this->get_file(), array('series' => array('default' => $series_array)));
-
-
 	}
 
 	public function get_series_store()
