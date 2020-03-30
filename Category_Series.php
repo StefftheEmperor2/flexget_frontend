@@ -6,7 +6,8 @@
  * Time: 19:44
  */
 
-class Category_Series {
+class Category_Series
+{
 	protected $name;
 	protected $categories = array();
 
@@ -28,10 +29,8 @@ class Category_Series {
 
 	public function category_exists(Series_Category $category)
 	{
-		foreach ($this->categories as $category_item)
-		{
-			if ($category->get_title_unique() == $category_item->get_title_unique())
-			{
+		foreach ($this->categories as $category_item) {
+			if ($category->get_title_unique() == $category_item->get_title_unique()) {
 				return TRUE;
 			}
 		}
@@ -41,15 +40,13 @@ class Category_Series {
 
 	public function add_category($category)
 	{
-		if (is_array($category))
-		{
-			foreach ($category as $category_item)
-			{
+		if (is_array($category)) {
+			foreach ($category as $category_item) {
 				$this->add_category($category_item);
 			}
-		} else {
-			if ( ! $this->category_exists($category))
-			{
+		}
+		else {
+			if (!$this->category_exists($category)) {
 				$this->categories[] = $category;
 			}
 		}
@@ -57,15 +54,13 @@ class Category_Series {
 
 	public function remove_category($category)
 	{
-		if (is_array($category))
-		{
-			foreach ($category as $category_item)
-			{
+		if (is_array($category)) {
+			foreach ($category as $category_item) {
 				$this->remove_category($category_item);
 			}
-		} else {
-			if ($this->category_exists($category))
-			{
+		}
+		else {
+			if ($this->category_exists($category)) {
 				foreach ($this->categories as $category_key => $category_item) {
 					if ($category->get_title_unique() == $category_item->get_title_unique()) {
 						unset($this->categories[$category_key]);

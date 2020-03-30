@@ -6,7 +6,8 @@
  * Time: 16:50
  */
 
-class Series_Category {
+class Series_Category
+{
 	protected $file;
 	protected $name;
 	protected $title_unique;
@@ -40,117 +41,103 @@ class Series_Category {
 	}
 
 	protected function check_dir($dir)
-    {
-        $segments = explode(DIRECTORY_SEPARATOR, $dir);
-        $current_dir_segments = [];
-        foreach ($segments as $segment)
-        {
-            $current_dir_segments[] = $segment;
-            $current_dir = implode(DIRECTORY_SEPARATOR, $current_dir_segments);
-            if (count($current_dir_segments) === 1 AND DIRECTORY_SEPARATOR === '/')
-            {
-                $current_dir = '/';
-            }
-            if ( ! is_dir($current_dir))
-            {
-                if ( ! mkdir($current_dir) && ! is_dir($current_dir))
-                {
-                    throw new \RuntimeException(sprintf('Directory "%s" was not created', $current_dir));
-                }
-            }
-        }
-    }
+	{
+		$segments = explode(DIRECTORY_SEPARATOR, $dir);
+		$current_dir_segments = [];
+		foreach ($segments as $segment) {
+			$current_dir_segments[] = $segment;
+			$current_dir = implode(DIRECTORY_SEPARATOR, $current_dir_segments);
+			if (count($current_dir_segments) === 1 AND DIRECTORY_SEPARATOR === '/') {
+				$current_dir = '/';
+			}
+			if (!is_dir($current_dir)) {
+				if (!mkdir($current_dir) && !is_dir($current_dir)) {
+					throw new \RuntimeException(sprintf('Directory "%s" was not created', $current_dir));
+				}
+			}
+		}
+	}
 
-    protected function touch($filename)
-    {
-        $segments = explode(DIRECTORY_SEPARATOR, $filename);
-        $dirname = implode(DIRECTORY_SEPARATOR, array_slice($segments, 0, -1));
-        $this->check_dir($dirname);
-        touch($filename);
-    }
+	protected function touch($filename)
+	{
+		$segments = explode(DIRECTORY_SEPARATOR, $filename);
+		$dirname = implode(DIRECTORY_SEPARATOR, array_slice($segments, 0, -1));
+		$this->check_dir($dirname);
+		touch($filename);
+	}
 
-    protected function get_from_csv($file)
-    {
-        if ( ! file_exists($file))
-        {
-            $this->touch($file);
-        }
+	protected function get_from_csv($file)
+	{
+		if (!file_exists($file)) {
+			$this->touch($file);
+		}
 
-        $fh = fopen($file, 'r');
-        $added_array = array();
-        if ($fh !== FALSE)
-        {
-            while (($added_line = fgetcsv($fh)) !== FALSE)
-            {
-                $added_array[] = $added_line;
-            }
+		$fh = fopen($file, 'r');
+		$added_array = array();
+		if ($fh !== FALSE) {
+			while (($added_line = fgetcsv($fh)) !== FALSE) {
+				$added_array[] = $added_line;
+			}
 
-            fclose($fh);
-        }
+			fclose($fh);
+		}
 
-        if ($added_array === FALSE)
-        {
-            $added_array = array();
-        }
-        $added_items = array();
+		if ($added_array === FALSE) {
+			$added_array = array();
+		}
+		$added_items = array();
 
-        foreach ($added_array as $added_item)
-        {
-            if (is_array($added_item))
-            {
-                $added_item = reset($added_item);
-            }
-            if (empty($added_item))
-            {
-                continue;
-            }
-            $added_object = new Series();
-            $added_object->set_name($added_item);
-            $added_object->set_category($this);
-            $added_items[] = $added_object;
-        }
+		foreach ($added_array as $added_item) {
+			if (is_array($added_item)) {
+				$added_item = reset($added_item);
+			}
+			if (empty($added_item)) {
+				continue;
+			}
+			$added_object = new Series();
+			$added_object->set_name($added_item);
+			$added_object->set_category($this);
+			$added_items[] = $added_object;
+		}
 
-        return $added_items;
-    }
+		return $added_items;
+	}
+
 	/**
 	 * @param mixed $file
 	 */
 	public function set_file($file)
 	{
-		if ( ! file_exists($file))
-		{
+		if (!file_exists($file)) {
 			$this->touch($file);
 		}
 
-		if ( ! function_exists('yaml_parse_file'))
-		{
+		if (!function_exists('yaml_parse_file')) {
 			die('pecl extension yaml missing');
 		}
 		$series = @yaml_parse_file($file);
 
-		if ($series === FALSE OR ! isset($series['series']['default']))
-		{
+		if ($series === FALSE OR !isset($series['series']['default'])) {
 			$series = array('series' => array('default' => array()));
 		}
 
 		$series = $series['series']['default'];
 		$this->series_store = new Series_Store();
-		foreach ($series as $serie)
-		{
+		foreach ($series as $serie) {
 			$series_object = new Series();
-            $series_object->set_name($serie);
-            $series_object->set_category($this);
+			$series_object->set_name($serie);
+			$series_object->set_category($this);
 
 			$this->series_store->add($series_object, FALSE);
 		}
 
-		$added_file = substr($file,0,strlen($file)-4).'_added.csv';
-		$removed_file = substr($file,0,strlen($file)-4).'_removed.csv';
+		$added_file = substr($file, 0, strlen($file) - 4) . '_added.csv';
+		$removed_file = substr($file, 0, strlen($file) - 4) . '_removed.csv';
 
 		$added_items = $this->get_from_csv($added_file);
 		$this->get_series_store()->set_added($added_items);
 
-        $removed_items = $this->get_from_csv($removed_file);
+		$removed_items = $this->get_from_csv($removed_file);
 		$this->get_series_store()->set_removed($removed_items);
 		$this->file = $file;
 	}
@@ -161,30 +148,27 @@ class Series_Category {
 		$series = $series_store->get_series();
 		$series_array = array();
 
-		foreach ($series as $serie)
-		{
+		foreach ($series as $serie) {
 			$series_array[] = $serie->get_name();
 		}
 
 		$added = $removed = array();
 
-		foreach ($series_store->get_added() as $added_item)
-		{
+		foreach ($series_store->get_added() as $added_item) {
 			$added[] = array($added_item->get_name(), 'http://flexget.com');
 		}
 
-		foreach ($series_store->get_removed() as $removed_item)
-		{
+		foreach ($series_store->get_removed() as $removed_item) {
 			$removed[] = array($removed_item->get_name(), 'http://flexget.com');
 		}
 
-		$fh = fopen(substr($this->get_file(),0,-4).'_added.csv','w');
+		$fh = fopen(substr($this->get_file(), 0, -4) . '_added.csv', 'w');
 		foreach ($added as $added_line) {
 			fputcsv($fh, $added_line);
 		}
 		fclose($fh);
 
-		$fh = fopen(substr($this->get_file(),0,-4).'_removed.csv','w');
+		$fh = fopen(substr($this->get_file(), 0, -4) . '_removed.csv', 'w');
 		foreach ($removed as $removed_line) {
 			fputcsv($fh, $removed_line);
 		}
@@ -195,13 +179,13 @@ class Series_Category {
 
 	public function get_series_store()
 	{
-		if ( ! isset($this->series_store))
-		{
+		if (!isset($this->series_store)) {
 			$this->series_store = new Series_Store;
 		}
 
 		return $this->series_store;
 	}
+
 	/**
 	 * @return mixed
 	 */

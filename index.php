@@ -9,23 +9,21 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 //define('BASE_DIR','/media/raspi/flexget');
-if (getenv('BASE_DIR'))
-{
-    define('BASE_DIR', getenv('BASE_DIR'));
+if (getenv('BASE_DIR')) {
+	define('BASE_DIR', getenv('BASE_DIR'));
 }
-else
-{
-    define('BASE_DIR','/opt/etc/flexget');
+else {
+	define('BASE_DIR', '/opt/etc/flexget');
 }
-define('SERIES_GERMAN', BASE_DIR.'/series_german.yml');
-define('SERIES_GERMAN_SUBBED', BASE_DIR.'/series_german_subbed.yml');
-define('SERIES_ENGLISH', BASE_DIR.'/series_english.yml');
+define('SERIES_GERMAN', BASE_DIR . '/series_german.yml');
+define('SERIES_GERMAN_SUBBED', BASE_DIR . '/series_german_subbed.yml');
+define('SERIES_ENGLISH', BASE_DIR . '/series_english.yml');
 
-define('MOVIE_QUEUE', BASE_DIR.'/movie_queue.yml');
+define('MOVIE_QUEUE', BASE_DIR . '/movie_queue.yml');
 
-define('MOVIES_GERMAN', BASE_DIR.'/movies_german.yml');
-define('MOVIES_GERMAN_SUBBED', BASE_DIR.'/movies_german_subbed.yml');
-define('MOVIES_ENGLISH', BASE_DIR.'/movies_english.yml');
+define('MOVIES_GERMAN', BASE_DIR . '/movies_german.yml');
+define('MOVIES_GERMAN_SUBBED', BASE_DIR . '/movies_german_subbed.yml');
+define('MOVIES_ENGLISH', BASE_DIR . '/movies_english.yml');
 
 require_once 'Category_Store.php';
 require_once 'Category_Series.php';
@@ -77,23 +75,23 @@ $categories[] = $movie_queue;
 ?>
 <!DOCTYPE html>
 <html>
-	<head>
-		<title>Flexget Config</title>
-		<link rel="stylesheet" type="text/css" href="/css/style.css">
-		<script type="text/javascript" language="JavaScript" src="/js/jquery-2.1.4.min.js"></script>
-		<script type="text/javascript" language="JavaScript" src="/js/html.js"></script>
-		<meta charset="utf-8">
-	</head>
-	<body>
-		<div class="tabbed">
-			<div class="headlines">
-				<div class="headline" data-category="movies">Filme</div>
-				<div class="headline" data-category="series">Serien</div>
-			</div>
-			<div class="content">
-				<div class="category" data-category="movies"><?php echo $movie_store->get_html(); ?></div>
-				<div class="category" data-category="series"><?php echo $series_store->get_html(); ?></div>
-			</div>
-		</div>
-	</body>
+<head>
+	<title>Flexget Config</title>
+	<link rel="stylesheet" type="text/css" href="/css/style.css">
+	<script type="text/javascript" language="JavaScript" src="/js/jquery-2.1.4.min.js"></script>
+	<script type="text/javascript" language="JavaScript" src="/js/html.js"></script>
+	<meta charset="utf-8">
+</head>
+<body>
+<div class="tabbed">
+	<div class="headlines">
+		<div class="headline" data-category="movies">Filme</div>
+		<div class="headline" data-category="series">Serien</div>
+	</div>
+	<div class="content">
+		<div class="category" data-category="movies"><?php echo $movie_store->get_html(); ?></div>
+		<div class="category" data-category="series"><?php echo $series_store->get_html(); ?></div>
+	</div>
+</div>
+</body>
 </html>

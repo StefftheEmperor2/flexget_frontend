@@ -6,7 +6,8 @@
  * Time: 16:47
  */
 
-class Series {
+class Series
+{
 	protected $name;
 	protected $category;
 
