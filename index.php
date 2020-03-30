@@ -9,7 +9,14 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 //define('BASE_DIR','/media/raspi/flexget');
-define('BASE_DIR','/opt/etc/flexget');
+if (getenv('BASE_DIR'))
+{
+    define('BASE_DIR', getenv('BASE_DIR'));
+}
+else
+{
+    define('BASE_DIR','/opt/etc/flexget');
+}
 define('SERIES_GERMAN', BASE_DIR.'/series_german.yml');
 define('SERIES_GERMAN_SUBBED', BASE_DIR.'/series_german_subbed.yml');
 define('SERIES_ENGLISH', BASE_DIR.'/series_english.yml');
@@ -60,31 +67,6 @@ $series_english->set_name('Englisch');
 $series_english->set_title_unique('series_english');
 $series_store->add($series_english);
 $categories[] = $series_english;
-
-/*
-$movies_german = new Series_Category();
-$movies_german->set_file(MOVIES_GERMAN);
-$movies_german->set_name('Deutsch');
-$movies_german->set_title_unique('movies_german');
-
-$movie_store->add($movies_german);
-$categories[] = $movies_german;
-
-$movies_german_subbed = new Series_Category();
-$movies_german_subbed->set_file(MOVIES_GERMAN_SUBBED);
-$movies_german_subbed->set_name('Deutsche Untertitel');
-$movies_german_subbed->set_title_unique('movies_german_subbed');
-
-$movie_store->add($movies_german_subbed);
-$categories[] = $movies_german_subbed;
-
-$movies_english = new Series_Category();
-$movies_english->set_file(MOVIES_ENGLISH);
-$movies_english->set_name('Englisch');
-$movies_english->set_title_unique('movies_english');
-$movie_store->add($movies_english);
-$categories[] = $movies_english;
-*/
 
 $movie_queue = new Series_Category();
 $movie_queue->set_file(MOVIE_QUEUE);

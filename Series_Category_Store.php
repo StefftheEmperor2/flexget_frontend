@@ -11,6 +11,30 @@ class Series_Category_Store {
 	protected $category_store;
 	protected $name;
 	protected $base_dir;
+
+	protected function check_base_dir()
+    {
+        $base_dir = $this->get_base_dir();
+        $segments = explode(DIRECTORY_SEPARATOR, $base_dir);
+        $dir = [];
+        foreach ($segments as $segment)
+        {
+            $dir[] = $segment;
+            $current_dir = implode(DIRECTORY_SEPARATOR, $dir);
+            if ( ! is_dir($current_dir))
+            {
+                if (!mkdir($current_dir) && !is_dir($current_dir)) {
+                    throw new \RuntimeException(sprintf('Directory "%s" was not created', $current_dir));
+                }
+            }
+        }
+    }
+
+	protected function touch($filename)
+    {
+        $this->check_base_dir();
+        touch($this->get_base_dir().DIRECTORY_SEPARATOR.$filename);
+    }
 	/**
 	 * @return mixed
 	 */
@@ -71,7 +95,7 @@ class Series_Category_Store {
 
 		if ($changed)
 		{
-			touch($this->get_base_dir().'/changed.status');
+			$this->touch('changed.status');
 		}
 	}
 	public function process_post()
