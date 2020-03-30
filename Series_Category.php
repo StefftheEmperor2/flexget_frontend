@@ -47,6 +47,10 @@ class Series_Category {
         {
             $current_dir_segments[] = $segment;
             $current_dir = implode(DIRECTORY_SEPARATOR, $current_dir_segments);
+            if (count($current_dir_segments) === 1 AND DIRECTORY_SEPARATOR === '/')
+            {
+                $current_dir = '/';
+            }
             if ( ! is_dir($current_dir))
             {
                 if ( ! mkdir($current_dir) && ! is_dir($current_dir))
