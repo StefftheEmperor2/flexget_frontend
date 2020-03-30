@@ -32,6 +32,18 @@ require_once 'Series.php';
 require_once 'Series_Store.php';
 require_once 'Series_Category.php';
 
+$api_url = NULL;
+$api_secret = NULL;
+$flexget_api_secret_file = '/dev/secrets/flexget_api';
+
+if (getenv('API_URL')) {
+	$api_url = getenv('API_URL');
+}
+if (file_exists($flexget_api_secret_file) AND is_readable($flexget_api_secret_file))
+{
+	$api_secret = file_get_contents($flexget_api_secret_file);
+}
+
 /**
  * @var Series_Category[] $categories
  */
@@ -40,11 +52,25 @@ $categories = array();
 $series_store = new Series_Category_Store();
 $series_store->set_name('series');
 $series_store->set_base_dir(BASE_DIR);
-
+if (isset($api_url))
+{
+	$series_store->set_api_url($api_url);
+}
+if (isset($api_secret))
+{
+	$series_store->set_api_secret($api_secret);
+}
 $movie_store = new Series_Category_Store();
 $movie_store->set_name('movies');
 $movie_store->set_base_dir(BASE_DIR);
-
+if (isset($api_url))
+{
+	$movie_store->set_api_url($api_url);
+}
+if (isset($api_secret))
+{
+	$movie_store->set_api_secret($api_secret);
+}
 $series_german = new Series_Category();
 $series_german->set_file(SERIES_GERMAN);
 $series_german->set_name('Deutsch');

@@ -12,6 +12,42 @@ class Series_Category_Store
 	protected $category_store;
 	protected $name;
 	protected $base_dir;
+	protected $api_url;
+	protected $api_secret;
+
+	/**
+	 * @return mixed
+	 */
+	public function get_api_url()
+	{
+		return $this->api_url;
+	}
+
+	/**
+	 * @param mixed $api_url
+	 */
+	public function set_api_url($api_url)
+	{
+		$this->api_url = $api_url;
+	}
+
+	/**
+	 * @return mixed
+	 */
+	public function get_api_secret()
+	{
+		return $this->api_secret;
+	}
+
+	/**
+	 * @param mixed $api_secret
+	 */
+	public function set_api_secret($api_secret)
+	{
+		$this->api_secret = $api_secret;
+	}
+
+
 
 	protected function check_base_dir()
 	{
@@ -96,11 +132,42 @@ class Series_Category_Store
 			}
 		}
 
-		if ($changed) {
+		if ($changed)
+		{
+			$this->api_reload_config();
 			$this->touch('changed.status');
 		}
 	}
 
+	protected function api_reload_config()
+	{
+		$api_url = $this->get_api_url();
+		$api_secret = $this->get_api_secret();
+		if (isset($api_url) AND isset($api_secret))
+		{
+			$ch = curl_init($api_url.'/api/manage');
+			curl_setopt(CURLOPT_RETURNTRANSFER, TRUE);
+			curl_setopt(CURLOPT_POST, TRUE);
+			curl_setopt(CURLOPT_POSTFIELDS, 'reload');
+			curl_setopt(CURLOPT_HTTPHEADER, ['Authorization: Token '.$api_secret]);
+			curl_exec($ch);
+			$error_code = curl_errno($ch);
+
+			if ($error_code)
+			{
+				echo 'Api Error: '.$error_code.'<br />';
+			}
+			else
+			{
+				$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+				if ($http_code != '200')
+				{
+					echo 'HTTP Api Error: '.$http_code.'<br />';
+				}
+			}
+			curl_close($ch);
+		}
+	}
 	public function process_post()
 	{
 		if (isset($_POST['category']) AND $_POST['category'] == $this->get_name()) {
