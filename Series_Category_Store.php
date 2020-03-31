@@ -8,19 +8,18 @@
 
 class Series_Category_Store
 {
-	protected $categories = array();
-	protected $category_store;
+	protected $categories = [];
 	protected $name;
 	protected $base_dir;
-	protected $api_url;
-	protected $api_secret;
+	protected $flexget_api;
+	protected $error_store;
 
 	/**
 	 * @return mixed
 	 */
 	public function get_api_url()
 	{
-		return $this->api_url;
+		return $this->get_api()->get_url();
 	}
 
 	/**
@@ -28,27 +27,43 @@ class Series_Category_Store
 	 */
 	public function set_api_url($api_url)
 	{
-		$this->api_url = $api_url;
+		$this->get_api()->set_url($api_url);
 	}
 
+	public function set_api_username($username)
+	{
+		$this->get_api()->set_username($username);
+	}
 	/**
 	 * @return mixed
 	 */
-	public function get_api_secret()
+	public function get_api_password()
 	{
-		return $this->api_secret;
+		return $this->get_api()->get_password();
 	}
 
 	/**
-	 * @param mixed $api_secret
+	 * @param string $password
+	 * @return $this
 	 */
-	public function set_api_secret($api_secret)
+	public function set_api_password($password)
 	{
-		$this->api_secret = $api_secret;
+		$this->get_api()->set_password($password);
+
+		return $this;
 	}
 
+	public function get_error_store()
+	{
+		$error_store = $this->error_store;
+		if ( ! isset($error_store))
+		{
+			$error_store = new Error_Store;
+			$this->error_store = $error_store;
+		}
 
-
+		return $error_store;
+	}
 	protected function check_base_dir()
 	{
 		$base_dir = $this->get_base_dir();
@@ -109,7 +124,7 @@ class Series_Category_Store
 	public function get_category_store()
 	{
 		if (!isset($this->series_store)) {
-			$this->series_store = new Category_Store();
+			$this->series_store = new Category_Store;
 		}
 
 		return $this->series_store;
@@ -122,11 +137,35 @@ class Series_Category_Store
 		return $series;
 	}
 
+	public function get_categories()
+	{
+		return $this->categories;
+	}
+
+	public function is_api_enabled()
+	{
+		$api = $this->get_api();
+		$api_username = $api->get_username();
+		$api_password = $api->get_password();
+		$api_url = $api->get_url();
+
+		return (isset($api_username) AND isset($api_password) AND isset($api_url));
+	}
+
 	public function save()
 	{
 		$changed = FALSE;
-		foreach ($this->categories as $category) {
-			$category->save();
+		foreach ($this->categories as $category)
+		{
+			try
+			{
+				$category->save();
+			}
+			catch (Api_Exception $exception)
+			{
+				$this->get_error_store()->add($exception);
+			}
+
 			if ($category->get_is_changed()) {
 				$changed = TRUE;
 			}
@@ -134,40 +173,104 @@ class Series_Category_Store
 
 		if ($changed)
 		{
-			$this->api_reload_config();
+			try
+			{
+				if ($this->is_api_enabled())
+				{
+					$this->api_reload_config();
+				}
+			}
+			catch (Api_Exception $exception)
+			{
+				$this->get_error_store()->add($exception);
+			}
+
 			$this->touch('changed.status');
 		}
 	}
 
 	protected function api_reload_config()
 	{
-		$api_url = $this->get_api_url();
-		$api_secret = $this->get_api_secret();
-		if (isset($api_url) AND isset($api_secret))
-		{
-			$ch = curl_init($api_url.'/api/manage');
-			curl_setopt(CURLOPT_RETURNTRANSFER, TRUE);
-			curl_setopt(CURLOPT_POST, TRUE);
-			curl_setopt(CURLOPT_POSTFIELDS, 'reload');
-			curl_setopt(CURLOPT_HTTPHEADER, ['Authorization: Token '.$api_secret]);
-			curl_exec($ch);
-			$error_code = curl_errno($ch);
-
-			if ($error_code)
-			{
-				echo 'Api Error: '.$error_code.'<br />';
-			}
-			else
-			{
-				$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-				if ($http_code != '200')
-				{
-					echo 'HTTP Api Error: '.$http_code.'<br />';
-				}
-			}
-			curl_close($ch);
-		}
+		$this->get_api()->reload_config();
 	}
+
+	protected function api_get_lists()
+	{
+		return $this->get_api()->get_lists();
+	}
+
+	public function api_add_list($list_name)
+	{
+		return $this->get_api()->add_list($list_name);
+	}
+
+	public function api_add_to_list($list_id, List_Entry $entry)
+	{
+		return $this->get_api()->add_to_list($list_id, $entry);
+	}
+
+	public function api_list_entry_exists($list_id, List_Entry $entry)
+	{
+		return $this->get_api()->list_entry_exists($list_id, $entry);
+	}
+
+	public function list_exists($list_name)
+	{
+		$id = $this->get_list_id($list_name);
+
+		return isset($id);
+	}
+
+	public function get_list_id($list_name)
+	{
+		$lists = $this->api_get_lists();
+
+		$id = NULL;
+		foreach ($lists as $list)
+		{
+			if ($list['name'] == $list_name)
+			{
+				$id = $list['id'];
+				break;
+			}
+		}
+
+		return $id;
+	}
+
+	public function add_to_list($list_name, $list_entry)
+	{
+		$list_id = $this->get_list_id($list_name);
+		if ( ! isset($list_id))
+		{
+			$list_id = $this->api_add_list($list_name);
+		}
+
+		$return_value = NULL;
+		if ( ! $this->api_list_entry_exists($list_id, $list_entry))
+		{
+			$return_value = $this->api_add_to_list($list_id, $list_entry);
+		}
+		return $return_value;
+	}
+
+	public function get_api()
+	{
+		$api = $this->flexget_api;
+		if ( ! isset($api))
+		{
+			$api = new Flexget_Api;
+			$this->flexget_api = $api;
+		}
+
+		return $api;
+	}
+
+	public function api_login()
+	{
+		$this->get_api()->login();
+	}
+
 	public function process_post()
 	{
 		if (isset($_POST['category']) AND $_POST['category'] == $this->get_name()) {
@@ -213,7 +316,6 @@ class Series_Category_Store
 
 	public function get_html()
 	{
-		$this->process_post();
 		$html = '<form method="post"><input type="hidden" name="category" value="' . $this->get_name() . '">';
 		$html .= '<table><thead><tr><th>Name</th>';
 

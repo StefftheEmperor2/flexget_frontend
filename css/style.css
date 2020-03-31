@@ -1,22 +1,64 @@
+.clearfix:after {
+	content: ".";
+	clear: both;
+	display: block;
+	visibility: hidden;
+	height: 0px;
+}
+
+.tabbed img.header_image
+{
+	max-height: 100%;
+	padding-right: 30px;
+	padding-bottom: 4px;
+	float: left;
+	box-sizing: border-box;
+
+}
+.tabbed .tabbed_bar
+{
+	height: 100%;
+}
 .headlines
 {
 	height: 30px;
 	display: block;
 	vertical-align: bottom;
+	border-bottom: 1px solid #A3A3A3;
 }
 .headlines .headline
 {
-	height: 16px;
-	line-height: 16px;
-	float: left;
-	border: 1px solid black;
-	margin-top: 4px;
-	padding:4px;
+	display: inline-block;
+	padding: 6px 9px 0 9px;
+	height: 100%;
+	box-sizing: border-box;
+	border-top-left-radius: 5px;
+	border-top-right-radius: 5px;
 }
 
 .headlines .headline.active
 {
-	height: 20px;
-	line-height: 20px;
-	margin-top: 0;
+	background-color: #C3C3C3;
+}
+
+.content
+{
+	margin-top: 6px;
+}
+th
+{
+	font-weight: normal;
+	text-align: left;
+}
+
+th, td
+{
+	padding: 6px;
+}
+
+.errors
+{
+	border: 1px solid #FF7070;
+	background-color: #FFA3A3;
+	padding: 12px;
 }

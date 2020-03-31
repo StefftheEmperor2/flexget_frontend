@@ -12,7 +12,8 @@ class Series_Category
 	protected $name;
 	protected $title_unique;
 
-
+	protected $track_changes_to_csv = FALSE;
+	protected $track_changes_to_lists = FALSE;
 	protected $store;
 	protected $series_store;
 
@@ -50,8 +51,10 @@ class Series_Category
 			if (count($current_dir_segments) === 1 AND DIRECTORY_SEPARATOR === '/') {
 				$current_dir = '/';
 			}
-			if (!is_dir($current_dir)) {
-				if (!mkdir($current_dir) && !is_dir($current_dir)) {
+			if ( ! is_dir($current_dir))
+			{
+				if ( ! mkdir($current_dir) && !is_dir($current_dir))
+				{
 					throw new \RuntimeException(sprintf('Directory "%s" was not created', $current_dir));
 				}
 			}
@@ -68,7 +71,8 @@ class Series_Category
 
 	protected function get_from_csv($file)
 	{
-		if (!file_exists($file)) {
+		if (!file_exists($file))
+		{
 			$this->touch($file);
 		}
 
@@ -131,16 +135,53 @@ class Series_Category
 			$this->series_store->add($series_object, FALSE);
 		}
 
-		$added_file = substr($file, 0, strlen($file) - 4) . '_added.csv';
-		$removed_file = substr($file, 0, strlen($file) - 4) . '_removed.csv';
+		if ($this->track_changes_to_csv)
+		{
+			$added_file = substr($file, 0, strlen($file) - 4) . '_added.csv';
+			$removed_file = substr($file, 0, strlen($file) - 4) . '_removed.csv';
 
-		$added_items = $this->get_from_csv($added_file);
-		$this->get_series_store()->set_added($added_items);
+			$added_items = $this->get_from_csv($added_file);
+			$this->get_series_store()->set_added($added_items);
 
-		$removed_items = $this->get_from_csv($removed_file);
-		$this->get_series_store()->set_removed($removed_items);
+			$removed_items = $this->get_from_csv($removed_file);
+			$this->get_series_store()->set_removed($removed_items);
+		}
+
 		$this->file = $file;
 	}
+
+	/**
+	 * @return bool
+	 */
+	public function get_track_changes_to_csv()
+	{
+		return $this->track_changes_to_csv;
+	}
+
+	/**
+	 * @param bool $track_changes_to_csv
+	 */
+	public function set_track_changes_to_csv($track_changes_to_csv)
+	{
+		$this->track_changes_to_csv = $track_changes_to_csv;
+	}
+
+	/**
+	 * @return bool
+	 */
+	public function get_track_changes_to_lists()
+	{
+		return $this->track_changes_to_lists;
+	}
+
+	/**
+	 * @param bool $track_changes_to_lists
+	 */
+	public function set_track_changes_to_lists($track_changes_to_lists)
+	{
+		$this->track_changes_to_lists = $track_changes_to_lists;
+	}
+
 
 	public function save()
 	{
@@ -155,31 +196,47 @@ class Series_Category
 		$added = $removed = array();
 
 		foreach ($series_store->get_added() as $added_item) {
-			$added[] = array($added_item->get_name(), 'http://flexget.com');
+			$added[] = List_Entry::factory($added_item->get_name(), 'http://flexget.com');
 		}
 
 		foreach ($series_store->get_removed() as $removed_item) {
-			$removed[] = array($removed_item->get_name(), 'http://flexget.com');
+			$removed[] = List_Entry::factory($removed_item->get_name(), 'http://flexget.com');
 		}
 
-		$fh = fopen(substr($this->get_file(), 0, -4) . '_added.csv', 'w');
-		foreach ($added as $added_line) {
-			fputcsv($fh, $added_line);
-		}
-		fclose($fh);
+		if ($this->get_track_changes_to_csv())
+		{
+			$fh = fopen(substr($this->get_file(), 0, -4) . '_added.csv', 'w');
+			foreach ($added as $added_line) {
+				fputcsv($fh, [$added_line->get_name(), $added_line->get_url()]);
+			}
+			fclose($fh);
 
-		$fh = fopen(substr($this->get_file(), 0, -4) . '_removed.csv', 'w');
-		foreach ($removed as $removed_line) {
-			fputcsv($fh, $removed_line);
+			$fh = fopen(substr($this->get_file(), 0, -4) . '_removed.csv', 'w');
+			foreach ($removed as $removed_line) {
+				fputcsv($fh, [$removed_line->get_name(), $removed_line->get_url()]);
+			}
+			fclose($fh);
 		}
-		fclose($fh);
 
+		if ($this->get_track_changes_to_lists())
+		{
+			foreach ($added as $added_item)
+			{
+				$this->get_store()->add_to_list($this->get_name().'_added_items', $added_item);
+			}
+
+			foreach ($removed as $removed_item)
+			{
+				$this->get_store()->add_to_list($this->get_name().'_removed_items', $removed_item);
+			}
+		}
 		yaml_emit_file($this->get_file(), array('series' => array('default' => $series_array)));
 	}
 
 	public function get_series_store()
 	{
-		if (!isset($this->series_store)) {
+		if ( ! isset($this->series_store))
+		{
 			$this->series_store = new Series_Store;
 		}
 

@@ -31,17 +31,27 @@ require_once 'Series_Category_Store.php';
 require_once 'Series.php';
 require_once 'Series_Store.php';
 require_once 'Series_Category.php';
+require_once 'List_Entry.php';
+require_once 'Flexget_Api.php';
+require_once 'Error_Store.php';
+require_once 'Api_Exception.php';
+require_once 'Api_Curl_Exception.php';
+require_once 'Api_Http_Exception.php';
 
 $api_url = NULL;
-$api_secret = NULL;
-$flexget_api_secret_file = '/dev/secrets/flexget_api';
+$api_password = NULL;
+$flexget_api_password_file = '/dev/secrets/flexget_api';
 
 if (getenv('API_URL')) {
 	$api_url = getenv('API_URL');
 }
-if (file_exists($flexget_api_secret_file) AND is_readable($flexget_api_secret_file))
+if (file_exists($flexget_api_password_file) AND is_readable($flexget_api_password_file))
 {
-	$api_secret = file_get_contents($flexget_api_secret_file);
+	$api_password = file_get_contents($flexget_api_password_file);
+}
+elseif (getenv('API_PASSWORD'))
+{
+	$api_password = getenv('API_PASSWORD');
 }
 
 /**
@@ -49,32 +59,35 @@ if (file_exists($flexget_api_secret_file) AND is_readable($flexget_api_secret_fi
  */
 $categories = array();
 
-$series_store = new Series_Category_Store();
+$series_store = new Series_Category_Store;
 $series_store->set_name('series');
 $series_store->set_base_dir(BASE_DIR);
+$series_store->set_api_username('flexget');
 if (isset($api_url))
 {
 	$series_store->set_api_url($api_url);
 }
-if (isset($api_secret))
+if (isset($api_password))
 {
-	$series_store->set_api_secret($api_secret);
+	$series_store->set_api_password($api_password);
 }
-$movie_store = new Series_Category_Store();
+$movie_store = new Series_Category_Store;
 $movie_store->set_name('movies');
 $movie_store->set_base_dir(BASE_DIR);
+$movie_store->set_api_username('flexget');
 if (isset($api_url))
 {
 	$movie_store->set_api_url($api_url);
 }
-if (isset($api_secret))
+if (isset($api_password))
 {
-	$movie_store->set_api_secret($api_secret);
+	$movie_store->set_api_password($api_password);
 }
-$series_german = new Series_Category();
+$series_german = new Series_Category;
 $series_german->set_file(SERIES_GERMAN);
 $series_german->set_name('Deutsch');
 $series_german->set_title_unique('series_german');
+$series_german->set_track_changes_to_csv(FALSE);
 $series_store->add($series_german);
 $categories[] = $series_german;
 
@@ -82,6 +95,7 @@ $series_german_subbed = new Series_Category();
 $series_german_subbed->set_file(SERIES_GERMAN_SUBBED);
 $series_german_subbed->set_name('Deutsche Untertitel');
 $series_german_subbed->set_title_unique('series_german_subbed');
+$series_german_subbed->set_track_changes_to_csv(FALSE);
 $series_store->add($series_german_subbed);
 $categories[] = $series_german_subbed;
 
@@ -89,6 +103,7 @@ $series_english = new Series_Category();
 $series_english->set_file(SERIES_ENGLISH);
 $series_english->set_name('Englisch');
 $series_english->set_title_unique('series_english');
+$series_english->set_track_changes_to_csv(FALSE);
 $series_store->add($series_english);
 $categories[] = $series_english;
 
@@ -96,8 +111,16 @@ $movie_queue = new Series_Category();
 $movie_queue->set_file(MOVIE_QUEUE);
 $movie_queue->set_name('Warteschlange');
 $movie_queue->set_title_unique('movie_queue');
+$movie_queue->set_track_changes_to_lists(TRUE);
+$movie_queue->set_track_changes_to_csv(FALSE);
 $movie_store->add($movie_queue);
 $categories[] = $movie_queue;
+
+$error_store = new Error_Store;
+$movie_store->process_post();
+$series_store->process_post();
+$error_store->add($movie_store->get_error_store());
+$error_store->add($series_store->get_error_store());
 ?>
 <!DOCTYPE html>
 <html>
@@ -110,11 +133,33 @@ $categories[] = $movie_queue;
 </head>
 <body>
 <div class="tabbed">
+
 	<div class="headlines">
-		<div class="headline" data-category="movies">Filme</div>
-		<div class="headline" data-category="series">Serien</div>
+		<img class="header_image" src="/img/flexget.png">
+		<div class="tabbed_bar">
+			<div class="headline" data-category="movies">Filme</div>
+			<div class="headline" data-category="series">Serien</div>
+		</div>
 	</div>
 	<div class="content">
+<?php
+		if ( ! $error_store->is_empty())
+		{
+?>
+			<div class="errors">
+				<?php
+				foreach ($error_store->get_messages() as $message)
+				{
+?>
+					<div class="error"><?php echo $message; ?></div>
+<?php
+				}
+?>
+			</div>
+<?php
+		}
+?>
+			<div>
 		<div class="category" data-category="movies"><?php echo $movie_store->get_html(); ?></div>
 		<div class="category" data-category="series"><?php echo $series_store->get_html(); ?></div>
 	</div>
