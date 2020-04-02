@@ -278,7 +278,11 @@ class Flexget_Api
 
 	public function add_to_list($list_id, List_Entry $entry)
 	{
-		return $this->post('/api/entry_list/'.$list_id.'/entries', ['title' => $entry->get_title(), 'original_url' => $entry->get_original_url()]);
+		return $this->post('/api/entry_list/'.$list_id.'/entries', [
+			'title' => $entry->get_title(),
+			'original_url' => $entry->get_original_url(),
+			'url' => $entry->get_url()
+		]);
 	}
 
 	public function list_entry_exists($list_id, List_Entry $entry)

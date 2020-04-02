@@ -22,12 +22,22 @@ class List_Entry
 {
 	protected $title;
 	protected $original_url;
+	protected $url;
 
-	public static function factory($title, $original_url)
+	public static function factory($title, $original_url, $url = NULL)
 	{
 		$instance = new static;
 		$instance->set_title($title);
 		$instance->set_original_url($original_url);
+		if (isset($url))
+		{
+			$instance->set_url($url);
+		}
+		else
+		{
+			$instance->set_url($original_url);
+		}
+
 
 		return $instance;
 	}
@@ -68,5 +78,21 @@ class List_Entry
 		return $this;
 	}
 
+	/**
+	 * @return string|NULL
+	 */
+	public function get_url()
+	{
+		return $this->url;
+	}
 
+	/**
+	 * @param string $url
+	 * @return List_Entry
+	 */
+	public function set_url($url)
+	{
+		$this->url = $url;
+		return $this;
+	}
 }
